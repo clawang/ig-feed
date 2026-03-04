@@ -839,6 +839,13 @@
                 renderGrid();
                 showToast("Photo removed");
               });
+              removeBtn.addEventListener(
+                "touchstart",
+                (e) => {
+                  e.stopPropagation();
+                },
+                { passive: true },
+              );
               removeBtn.addEventListener("touchend", (e) => {
                 e.stopPropagation();
                 e.preventDefault();
