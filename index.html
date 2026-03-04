@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feed Planner · @claireewang</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f7f4f0;
+        --surface: #ffffff;
+        --surface2: #f0ece6;
+        --border: #e2dbd3;
+        --text: #1a1714;
+        --text-muted: #9a8f85;
+        --accent: #c4754a;
+        --accent-light: #f5e8df;
+        --shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+      }
+
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* HEADER */
+      .header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--shadow);
+      }
+
+      .header-logo {
+        font-family: "Playfair Display", serif;
+        font-size: 1.3rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--text);
+      }
+
+      .header-logo span {
+        color: var(--accent);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn {
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.82rem;
+        font-weight: 500;
+        padding: 8px 18px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        letter-spacing: 0.01em;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        background: var(--surface2);
+        color: var(--text);
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #b5663c;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(196, 117, 74, 0.3);
+      }
+
+      /* LAYOUT */
+      .layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 60px);
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        padding: 24px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        overflow-y: auto;
+        max-height: calc(100vh - 60px);
+        position: sticky;
+        top: 60px;
+      }
+
+      .profile-card {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          #f09433,
+          #e6683c,
+          #dc2743,
+          #cc2366,
+          #bc1888
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        font-size: 1.8rem;
+        box-shadow:
+          0 0 0 3px white,
+          0 0 0 4px var(--border);
+      }
+
+      .profile-handle {
+        font-family: "Playfair Display", serif;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .profile-note {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      .section-label {
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+      }
+
+      /* UPLOAD ZONE */
+      .upload-zone {
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 24px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--surface2);
+      }
+
+      .upload-zone:hover,
+      .upload-zone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+
+      .upload-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+        opacity: 0.5;
+      }
+
+      .upload-zone p {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      .upload-zone strong {
+        color: var(--accent);
+        font-weight: 500;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      /* QUEUE */
+      .queue-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .queue-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        border-radius: 8px;
+        background: var(--surface2);
+        cursor: grab;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+      }
+
+      .queue-item:hover {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+
+      .queue-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+
+      .queue-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .queue-name {
+        font-size: 0.75rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--text);
+      }
+
+      .queue-sub {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        margin-top: 1px;
+      }
+
+      .queue-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 1rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .queue-remove:hover {
+        color: #e55;
+        background: #fee;
+      }
+
+      .empty-queue {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 12px;
+        font-style: italic;
+      }
+
+      /* STATS */
+      .stats-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .stat-pill {
+        flex: 1;
+        background: var(--surface2);
+        border-radius: 8px;
+        padding: 10px 8px;
+        text-align: center;
+      }
+
+      .stat-num {
+        font-family: "Playfair Display", serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--accent);
+        display: block;
+      }
+
+      .stat-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      /* MAIN CONTENT */
+      .main {
+        padding: 28px 32px;
+        overflow-y: auto;
+      }
+
+      .feed-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .feed-title {
+        font-family: "Playfair Display", serif;
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+
+      .feed-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .feed-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .mode-toggle {
+        display: flex;
+        background: var(--surface2);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
+      }
+
+      .mode-btn {
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+        transition: all 0.15s;
+        background: transparent;
+        color: var(--text-muted);
+      }
+
+      .mode-btn.active {
+        background: white;
+        color: var(--text);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      /* FEED GRID */
+      .feed-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 3px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        max-width: 600px;
+      }
+
+      .feed-cell {
+        aspect-ratio: 4 / 5;
+        position: relative;
+        background: var(--surface2);
+        overflow: hidden;
+        cursor: grab;
+        transition: opacity 0.15s;
+      }
+
+      .feed-cell:active {
+        cursor: grabbing;
+      }
+
+      .feed-cell img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.2s ease;
+        pointer-events: none;
+      }
+
+      .feed-cell:hover img {
+        transform: scale(1.04);
+      }
+
+      .feed-cell .overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0);
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+
+      .feed-cell:hover .overlay {
+        background: rgba(0, 0, 0, 0.35);
+      }
+
+      .overlay-icon {
+        color: white;
+        font-size: 1.1rem;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: all 0.2s;
+      }
+
+      .feed-cell:hover .overlay-icon {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .feed-cell.empty-slot {
+        cursor: default;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 1.5rem;
+        opacity: 0.5;
+      }
+
+      .feed-cell.drag-over-target {
+        outline: 3px solid var(--accent);
+        outline-offset: -3px;
+        opacity: 0.7;
+      }
+
+      .feed-cell.dragging {
+        opacity: 0.3;
+      }
+
+      /* NEW badge */
+      .badge-new {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        background: var(--accent);
+        color: white;
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        pointer-events: none;
+      }
+
+      /* POSITION INDICATOR */
+      .pos-badge {
+        position: absolute;
+        bottom: 6px;
+        right: 6px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 500;
+        padding: 2px 6px;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+      }
+
+      .feed-cell:hover .pos-badge {
+        opacity: 1;
+      }
+
+      /* NOTICE */
+      .notice {
+        background: #fffbeb;
+        border: 1px solid #f6d860;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.78rem;
+        color: #92690a;
+        line-height: 1.5;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .notice-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* TOAST */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: var(--text);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        opacity: 0;
+        transition: all 0.25s ease;
+        pointer-events: none;
+        z-index: 999;
+        white-space: nowrap;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* INSTRUCTIONS */
+      .instructions {
+        margin-top: 20px;
+        max-width: 600px;
+      }
+
+      .instruction-steps {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+
+      /* SCROLLBAR */
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 10px;
+      }
+
+      @media (max-width: 768px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          position: static;
+          max-height: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-logo">feed<span>.</span>planner</div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" onclick="clearFeedImages()">
+          Clear feed
+        </button>
+        <button class="btn btn-ghost" onclick="clearNewImages()">
+          Clear new
+        </button>
+        <button class="btn btn-primary" onclick="addAllToGrid()">
+          ➕ Add all to grid
+        </button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="profile-card">
+          <div class="profile-avatar">👩</div>
+          <div class="profile-handle">@claireewang</div>
+          <p class="profile-note">
+            Feed planner — drag & drop to rearrange your grid preview
+          </p>
+        </div>
+
+        <div>
+          <div class="section-label">Stats</div>
+          <div class="stats-row">
+            <div class="stat-pill">
+              <span class="stat-num" id="stat-total">0</span>
+              <span class="stat-label">In grid</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num" id="stat-new">0</span>
+              <span class="stat-label">New</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num" id="stat-rows">0</span>
+              <span class="stat-label">Rows</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Load existing feed</div>
+          <label for="folder-input">
+            <div class="upload-zone" id="folder-zone">
+              <div class="upload-icon">🗂️</div>
+              <p><strong>Select a folder</strong> of your existing posts</p>
+              <p style="margin-top: 4px; font-size: 0.7rem">
+                All images in the folder fill the grid
+              </p>
+            </div>
+          </label>
+          <input
+            type="file"
+            id="folder-input"
+            accept="image/*"
+            multiple
+            webkitdirectory
+          />
+        </div>
+
+        <div>
+          <div class="section-label">Add new photos</div>
+          <label for="file-input">
+            <div class="upload-zone" id="drop-zone">
+              <div class="upload-icon">✨</div>
+              <p><strong>Click to upload</strong> or drag & drop new photos</p>
+              <p style="margin-top: 4px; font-size: 0.7rem">
+                These will appear at the top of the grid
+              </p>
+            </div>
+          </label>
+          <input type="file" id="file-input" accept="image/*" multiple />
+        </div>
+
+        <div>
+          <div class="section-label">
+            New photos queue (<span id="queue-count">0</span>)
+          </div>
+          <div class="queue-list" id="queue-list">
+            <div class="empty-queue">No new photos yet</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main">
+        <div class="feed-header">
+          <div>
+            <div class="feed-title">Grid Preview</div>
+            <div class="feed-subtitle">
+              Drag photos to rearrange · Most recent top-left
+            </div>
+          </div>
+          <div class="feed-controls">
+            <div class="mode-toggle">
+              <button
+                class="mode-btn active"
+                id="mode-9"
+                onclick="setGridRows(3)"
+              >
+                3×3
+              </button>
+              <button class="mode-btn" id="mode-12" onclick="setGridRows(4)">
+                3×4
+              </button>
+              <button class="mode-btn" id="mode-18" onclick="setGridRows(6)">
+                3×6
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="feed-grid" id="feed-grid"></div>
+
+        <div class="instructions" style="margin-top: 20px">
+          <div class="instruction-steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <span>Select a folder of your existing Instagram posts</span>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <span>Upload new photos to preview in the grid</span>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <span>Drag & drop cells to rearrange</span>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <span>See exactly how your feed will look</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      let gridImages = []; // {src, isNew, name}
+      let queueImages = []; // {src, name}
+      let gridRows = 3;
+      let dragSrcIndex = null;
+
+      // ── GRID ──────────────────────────────────────
+      function setGridRows(n) {
+        gridRows = n;
+        document
+          .querySelectorAll(".mode-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById(`mode-${n * 3}`).classList.add("active");
+        renderGrid();
+      }
+
+      function renderGrid() {
+        const grid = document.getElementById("feed-grid");
+        const total = gridRows * 3;
+        grid.innerHTML = "";
+
+        for (let i = 0; i < total; i++) {
+          const cell = document.createElement("div");
+          cell.className = "feed-cell";
+          cell.dataset.index = i;
+
+          if (i < gridImages.length) {
+            const img = document.createElement("img");
+            img.src = gridImages[i].src;
+            img.alt = "";
+
+            const overlay = document.createElement("div");
+            overlay.className = "overlay";
+            overlay.innerHTML = `<span class="overlay-icon">⇄ move</span>`;
+
+            const pos = document.createElement("div");
+            pos.className = "pos-badge";
+            pos.textContent = `#${i + 1}`;
+
+            cell.appendChild(img);
+            cell.appendChild(overlay);
+            cell.appendChild(pos);
+
+            if (gridImages[i].isNew) {
+              const badge = document.createElement("div");
+              badge.className = "badge-new";
+              badge.textContent = "New";
+              cell.appendChild(badge);
+            }
+
+            // Drag events
+            cell.draggable = true;
+            cell.addEventListener("dragstart", onDragStart);
+            cell.addEventListener("dragover", onDragOver);
+            cell.addEventListener("dragleave", onDragLeave);
+            cell.addEventListener("drop", onDrop);
+            cell.addEventListener("dragend", onDragEnd);
+          } else {
+            cell.classList.add("empty-slot");
+            cell.innerHTML = "+";
+            cell.style.cursor = "pointer";
+            cell.addEventListener("click", () => {
+              document.getElementById("file-input").click();
+            });
+          }
+
+          grid.appendChild(cell);
+        }
+        updateStats();
+      }
+
+      // ── DRAG & DROP ───────────────────────────────
+      function onDragStart(e) {
+        dragSrcIndex = parseInt(e.currentTarget.dataset.index);
+        e.currentTarget.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      }
+
+      function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        e.currentTarget.classList.add("drag-over-target");
+      }
+
+      function onDragLeave(e) {
+        e.currentTarget.classList.remove("drag-over-target");
+      }
+
+      function onDrop(e) {
+        e.preventDefault();
+        const targetIndex = parseInt(e.currentTarget.dataset.index);
+        e.currentTarget.classList.remove("drag-over-target");
+
+        if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+          if (
+            dragSrcIndex < gridImages.length &&
+            targetIndex < gridImages.length
+          ) {
+            const tmp = gridImages[dragSrcIndex];
+            gridImages[dragSrcIndex] = gridImages[targetIndex];
+            gridImages[targetIndex] = tmp;
+            renderGrid();
+            showToast("Photos swapped!");
+          }
+        }
+        dragSrcIndex = null;
+      }
+
+      function onDragEnd(e) {
+        e.currentTarget.classList.remove("dragging");
+        dragSrcIndex = null;
+      }
+
+      // ── FOLDER LOAD (existing feed) ───────────────
+      document
+        .getElementById("folder-input")
+        .addEventListener("change", function (e) {
+          const files = Array.from(e.target.files)
+            .filter((f) => f.type.startsWith("image/"))
+            .sort((a, b) =>
+              a.name.localeCompare(b.name, undefined, { numeric: true }),
+            );
+          if (!files.length) return;
+
+          // Clear existing non-new images first
+          gridImages = gridImages.filter((img) => img.isNew);
+
+          let loaded = 0;
+          const existingImages = [];
+          files.forEach((file, idx) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              existingImages[idx] = {
+                src: ev.target.result,
+                isNew: false,
+                name: file.name,
+              };
+              loaded++;
+              if (loaded === files.length) {
+                // Append existing behind any already-queued new images
+                gridImages = [...gridImages, ...existingImages.filter(Boolean)];
+                renderGrid();
+                showToast(
+                  `${files.length} existing photo${files.length > 1 ? "s" : ""} loaded`,
+                );
+              }
+            };
+            reader.readAsDataURL(file);
+          });
+          this.value = "";
+        });
+
+      function clearFeedImages() {
+        gridImages = gridImages.filter((img) => img.isNew);
+        renderGrid();
+        showToast("Existing feed cleared");
+      }
+
+      // ── UPLOAD (new photos) ───────────────────────
+      document
+        .getElementById("file-input")
+        .addEventListener("change", function (e) {
+          handleFiles(Array.from(e.target.files));
+          this.value = "";
+        });
+
+      const dropZone = document.getElementById("drop-zone");
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("drag-over");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("drag-over"),
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("drag-over");
+        const files = Array.from(e.dataTransfer.files).filter((f) =>
+          f.type.startsWith("image/"),
+        );
+        handleFiles(files);
+      });
+
+      function handleFiles(files) {
+        if (!files.length) return;
+        let loaded = 0;
+        files.forEach((file) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            queueImages.push({ src: ev.target.result, name: file.name });
+            loaded++;
+            if (loaded === files.length) {
+              renderQueue();
+              showToast(
+                `${files.length} photo${files.length > 1 ? "s" : ""} added to queue`,
+              );
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function renderQueue() {
+        const list = document.getElementById("queue-list");
+        document.getElementById("queue-count").textContent = queueImages.length;
+
+        if (!queueImages.length) {
+          list.innerHTML = '<div class="empty-queue">No new photos yet</div>';
+          return;
+        }
+
+        list.innerHTML = "";
+        queueImages.forEach((img, i) => {
+          const item = document.createElement("div");
+          item.className = "queue-item";
+          item.innerHTML = `
+        <img class="queue-thumb" src="${img.src}" alt="">
+        <div class="queue-info">
+          <div class="queue-name">${img.name}</div>
+          <div class="queue-sub">Click to add to grid</div>
+        </div>
+        <button class="queue-remove" title="Remove" onclick="removeFromQueue(${i})">✕</button>
+      `;
+          item.addEventListener("click", (e) => {
+            if (e.target.classList.contains("queue-remove")) return;
+            addToGrid(i);
+          });
+          list.appendChild(item);
+        });
+      }
+
+      function addToGrid(queueIndex) {
+        const img = queueImages[queueIndex];
+        gridImages.unshift({ src: img.src, isNew: true, name: img.name });
+        queueImages.splice(queueIndex, 1);
+        renderQueue();
+        renderGrid();
+        showToast("Added to grid!");
+      }
+
+      function addAllToGrid() {
+        if (!queueImages.length) {
+          showToast("No images in queue");
+          return;
+        }
+        queueImages.forEach((img) => {
+          gridImages.unshift({ src: img.src, isNew: true, name: img.name });
+        });
+        queueImages = [];
+        renderQueue();
+        renderGrid();
+        showToast("All photos added to grid!");
+      }
+
+      function removeFromQueue(i) {
+        queueImages.splice(i, 1);
+        renderQueue();
+      }
+
+      function clearNewImages() {
+        gridImages = gridImages.filter((img) => !img.isNew);
+        queueImages = [];
+        renderQueue();
+        renderGrid();
+        showToast("Uploads cleared");
+      }
+
+      // ── STATS ─────────────────────────────────────
+      function updateStats() {
+        document.getElementById("stat-total").textContent = gridImages.length;
+        document.getElementById("stat-new").textContent = gridImages.filter(
+          (i) => i.isNew,
+        ).length;
+        document.getElementById("stat-rows").textContent = Math.ceil(
+          gridImages.length / 3,
+        );
+      }
+
+      // ── TOAST ─────────────────────────────────────
+      let toastTimer;
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+      }
+
+      // ── INIT ──────────────────────────────────────
+      renderGrid();
+    </script>
+  </body>
+</html>
