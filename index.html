@@ -494,20 +494,18 @@
         background: #e55;
       }
 
-      /* NEW badge */
-      .badge-new {
+      /* NEW indicator — glowing border */
+      .feed-cell.is-new {
+        outline: 3px solid var(--accent);
+        outline-offset: -3px;
+      }
+      .feed-cell.is-new::after {
+        content: "";
         position: absolute;
-        top: 6px;
-        left: 6px;
-        background: var(--accent);
-        color: white;
-        font-size: 0.58rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        padding: 2px 6px;
-        border-radius: 4px;
-        text-transform: uppercase;
+        inset: 0;
+        box-shadow: inset 0 0 0 3px var(--accent);
         pointer-events: none;
+        z-index: 5;
       }
 
       /* POSITION INDICATOR */
@@ -609,6 +607,33 @@
         font-weight: 600;
         color: var(--accent);
         flex-shrink: 0;
+      }
+
+      .shift-btn {
+        padding: 5px 14px;
+        font-size: 0.78rem;
+        border-radius: 6px;
+      }
+      .shift-btn.active {
+        background: var(--accent-light);
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .feed-cell.placeholder-slot {
+        background: #e8e4df;
+        border: none;
+        cursor: default;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .feed-cell.placeholder-slot::after {
+        content: "";
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #d0cbc4;
       }
 
       /* SCROLLBAR */
@@ -749,6 +774,14 @@
                 3×6
               </button>
             </div>
+            <button
+              class="btn btn-ghost shift-btn"
+              id="shift-btn"
+              onclick="toggleShift()"
+              title="Shift grid to preview next post position"
+            >
+              ⇥ Shift
+            </button>
           </div>
         </div>
 
@@ -784,6 +817,15 @@
       let queueImages = []; // {src, name}
       let gridRows = 3;
       let dragSrcIndex = null;
+      let shiftActive = false;
+
+      function toggleShift() {
+        shiftActive = !shiftActive;
+        const btn = document.getElementById("shift-btn");
+        btn.classList.toggle("active", shiftActive);
+        btn.textContent = shiftActive ? "⇤ Unshift" : "⇥ Shift";
+        renderGrid();
+      }
 
       // ── GRID ──────────────────────────────────────
       function setGridRows(n) {
@@ -800,14 +842,26 @@
         const total = gridRows * 3;
         grid.innerHTML = "";
 
+        // When shifted, slot 0 is a placeholder; images start at slot 1
+        const offset = shiftActive ? 1 : 0;
+
         for (let i = 0; i < total; i++) {
           const cell = document.createElement("div");
           cell.className = "feed-cell";
           cell.dataset.index = i;
 
-          if (i < gridImages.length) {
+          // Placeholder cell at position 0 when shifted
+          if (shiftActive && i === 0) {
+            cell.classList.add("placeholder-slot");
+            grid.appendChild(cell);
+            continue;
+          }
+
+          const imgIndex = i - offset;
+
+          if (imgIndex >= 0 && imgIndex < gridImages.length) {
             const img = document.createElement("img");
-            img.src = gridImages[i].src;
+            img.src = gridImages[imgIndex].src;
             img.alt = "";
 
             const overlay = document.createElement("div");
@@ -816,23 +870,20 @@
 
             const pos = document.createElement("div");
             pos.className = "pos-badge";
-            pos.textContent = `#${i + 1}`;
+            pos.textContent = `#${imgIndex + 1}`;
 
             cell.appendChild(img);
             cell.appendChild(overlay);
             cell.appendChild(pos);
 
-            if (gridImages[i].isNew) {
-              const badge = document.createElement("div");
-              badge.className = "badge-new";
-              badge.textContent = "New";
-              cell.appendChild(badge);
+            if (gridImages[imgIndex].isNew) {
+              cell.classList.add("is-new");
 
               const removeBtn = document.createElement("button");
               removeBtn.className = "cell-remove-btn";
               removeBtn.innerHTML = "&#x2715;";
               removeBtn.title = "Remove photo";
-              const capturedIndex = i;
+              const capturedIndex = imgIndex;
               removeBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 gridImages.splice(capturedIndex, 1);
@@ -1014,9 +1065,17 @@
         lastTouchTarget = null;
       }
 
-      function swapCells(srcIdx, tgtIdx) {
-        if (srcIdx === null || srcIdx === tgtIdx) return;
-        if (srcIdx < gridImages.length && tgtIdx < gridImages.length) {
+      function swapCells(srcVisual, tgtVisual) {
+        if (srcVisual === null || srcVisual === tgtVisual) return;
+        const offset = shiftActive ? 1 : 0;
+        const srcIdx = srcVisual - offset;
+        const tgtIdx = tgtVisual - offset;
+        if (
+          srcIdx >= 0 &&
+          tgtIdx >= 0 &&
+          srcIdx < gridImages.length &&
+          tgtIdx < gridImages.length
+        ) {
           const tmp = gridImages[srcIdx];
           gridImages[srcIdx] = gridImages[tgtIdx];
           gridImages[tgtIdx] = tmp;
