@@ -464,6 +464,36 @@
         opacity: 0.3;
       }
 
+      .cell-remove-btn {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(0, 0, 0, 0.65);
+        color: white;
+        font-size: 0.7rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition:
+          opacity 0.15s,
+          background 0.15s;
+        pointer-events: auto;
+        z-index: 10;
+        line-height: 1;
+      }
+      .feed-cell:hover .cell-remove-btn {
+        opacity: 1;
+      }
+      .cell-remove-btn:hover {
+        background: #e55;
+      }
+
       /* NEW badge */
       .badge-new {
         position: absolute;
@@ -797,15 +827,42 @@
               badge.className = "badge-new";
               badge.textContent = "New";
               cell.appendChild(badge);
+
+              const removeBtn = document.createElement("button");
+              removeBtn.className = "cell-remove-btn";
+              removeBtn.innerHTML = "&#x2715;";
+              removeBtn.title = "Remove photo";
+              const capturedIndex = i;
+              removeBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                gridImages.splice(capturedIndex, 1);
+                renderGrid();
+                showToast("Photo removed");
+              });
+              removeBtn.addEventListener("touchend", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                gridImages.splice(capturedIndex, 1);
+                renderGrid();
+                showToast("Photo removed");
+              });
+              cell.appendChild(removeBtn);
             }
 
-            // Drag events
+            // Drag events (desktop)
             cell.draggable = true;
             cell.addEventListener("dragstart", onDragStart);
             cell.addEventListener("dragover", onDragOver);
             cell.addEventListener("dragleave", onDragLeave);
             cell.addEventListener("drop", onDrop);
             cell.addEventListener("dragend", onDragEnd);
+
+            // Touch events (mobile)
+            cell.addEventListener("touchstart", onTouchStart, {
+              passive: false,
+            });
+            cell.addEventListener("touchmove", onTouchMove, { passive: false });
+            cell.addEventListener("touchend", onTouchEnd);
           } else {
             cell.classList.add("empty-slot");
             cell.innerHTML = "+";
@@ -820,7 +877,7 @@
         updateStats();
       }
 
-      // ── DRAG & DROP ───────────────────────────────
+      // ── DRAG & DROP (mouse) ───────────────────────
       function onDragStart(e) {
         dragSrcIndex = parseInt(e.currentTarget.dataset.index);
         e.currentTarget.classList.add("dragging");
@@ -841,25 +898,124 @@
         e.preventDefault();
         const targetIndex = parseInt(e.currentTarget.dataset.index);
         e.currentTarget.classList.remove("drag-over-target");
-
-        if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
-          if (
-            dragSrcIndex < gridImages.length &&
-            targetIndex < gridImages.length
-          ) {
-            const tmp = gridImages[dragSrcIndex];
-            gridImages[dragSrcIndex] = gridImages[targetIndex];
-            gridImages[targetIndex] = tmp;
-            renderGrid();
-            showToast("Photos swapped!");
-          }
-        }
+        swapCells(dragSrcIndex, targetIndex);
         dragSrcIndex = null;
       }
 
       function onDragEnd(e) {
         e.currentTarget.classList.remove("dragging");
         dragSrcIndex = null;
+      }
+
+      // ── TOUCH DRAG (mobile) ───────────────────────
+      let touchDragIndex = null;
+      let touchClone = null;
+      let lastTouchTarget = null;
+
+      function onTouchStart(e) {
+        const cell = e.currentTarget;
+        touchDragIndex = parseInt(cell.dataset.index);
+        if (touchDragIndex >= gridImages.length) return;
+
+        e.preventDefault();
+        const touch = e.touches[0];
+
+        // Create floating ghost clone
+        const rect = cell.getBoundingClientRect();
+        touchClone = cell.cloneNode(true);
+        touchClone.style.cssText = `
+      position: fixed;
+      left: ${rect.left}px;
+      top: ${rect.top}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      opacity: 0.85;
+      pointer-events: none;
+      z-index: 9999;
+      border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      transition: none;
+      transform: scale(1.05);
+    `;
+        document.body.appendChild(touchClone);
+        cell.classList.add("dragging");
+      }
+
+      function onTouchMove(e) {
+        if (touchDragIndex === null) return;
+        e.preventDefault();
+
+        const touch = e.touches[0];
+
+        // Move the ghost
+        if (touchClone) {
+          touchClone.style.left =
+            touch.clientX - touchClone.offsetWidth / 2 + "px";
+          touchClone.style.top =
+            touch.clientY - touchClone.offsetHeight / 2 + "px";
+        }
+
+        // Find which cell is under the finger
+        touchClone.style.display = "none";
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        touchClone.style.display = "";
+
+        const targetCell = el && el.closest(".feed-cell");
+
+        // Clear previous highlight
+        if (lastTouchTarget && lastTouchTarget !== targetCell) {
+          lastTouchTarget.classList.remove("drag-over-target");
+        }
+        if (
+          targetCell &&
+          targetCell !==
+            document.querySelector(`.feed-cell[data-index="${touchDragIndex}"]`)
+        ) {
+          targetCell.classList.add("drag-over-target");
+          lastTouchTarget = targetCell;
+        }
+      }
+
+      function onTouchEnd(e) {
+        if (touchDragIndex === null) return;
+
+        // Clean up ghost
+        if (touchClone) {
+          touchClone.remove();
+          touchClone = null;
+        }
+        if (lastTouchTarget) {
+          lastTouchTarget.classList.remove("drag-over-target");
+        }
+
+        // Remove dragging class
+        const srcCell = document.querySelector(
+          `.feed-cell[data-index="${touchDragIndex}"]`,
+        );
+        if (srcCell) srcCell.classList.remove("dragging");
+
+        // Find drop target
+        const touch = e.changedTouches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const targetCell = el && el.closest(".feed-cell");
+        if (targetCell) {
+          const targetIndex = parseInt(targetCell.dataset.index);
+          swapCells(touchDragIndex, targetIndex);
+        }
+
+        touchDragIndex = null;
+        lastTouchTarget = null;
+      }
+
+      function swapCells(srcIdx, tgtIdx) {
+        if (srcIdx === null || srcIdx === tgtIdx) return;
+        if (srcIdx < gridImages.length && tgtIdx < gridImages.length) {
+          const tmp = gridImages[srcIdx];
+          gridImages[srcIdx] = gridImages[tgtIdx];
+          gridImages[tgtIdx] = tmp;
+          renderGrid();
+          showToast("Photos swapped!");
+        }
       }
 
       // ── FOLDER LOAD (existing feed) ───────────────
